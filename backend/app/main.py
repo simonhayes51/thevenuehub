@@ -1,3 +1,4 @@
+﻿import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db import init_db, seed_if_needed
