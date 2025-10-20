@@ -10,12 +10,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def _ensure_core_columns():
     with engine.begin() as conn:
-        # -------- users: role flags --------
+        # ===== users =====
         conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_provider boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_business boolean DEFAULT false;")
 
-        # -------- acts: required columns --------
+        # ===== acts =====
         conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS slug text;")
         conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS name text;")
         conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS act_type text;")
@@ -29,7 +29,7 @@ def _ensure_core_columns():
         conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS featured boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS premium boolean DEFAULT false;")
 
-        # -------- venues: required columns --------
+        # ===== venues =====
         conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS slug text;")
         conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS name text;")
         conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS location text;")
@@ -41,20 +41,42 @@ def _ensure_core_columns():
         conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS featured boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS premium boolean DEFAULT false;")
 
-        # -------- backfill slugs from name --------
+        # ===== bookings =====
+        conn.exec_driver_sql("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS customer_name text;")
+        conn.exec_driver_sql("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS customer_email text;")
+        conn.exec_driver_sql("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS date text;")
+        conn.exec_driver_sql("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS message text;")
+        conn.exec_driver_sql("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS act_id integer;")
+        conn.exec_driver_sql("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS venue_id integer;")
+        conn.exec_driver_sql("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();")
+
+        # ===== reviews =====
+        conn.exec_driver_sql("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS author_name text;")
+        conn.exec_driver_sql("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS rating integer;")
+        conn.exec_driver_sql("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS comment text;")
+        conn.exec_driver_sql("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS act_id integer;")
+        conn.exec_driver_sql("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS venue_id integer;")
+        conn.exec_driver_sql("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();")
+        conn.exec_driver_sql("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS status text DEFAULT 'visible';")
+        conn.exec_driver_sql("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS response text;")
+
+        # ===== leads =====
+        conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN IF NOT EXISTS booking_id integer;")
+        conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN IF NOT EXISTS unlocked_by_business_id integer;")
+
+        # ===== backfill slugs =====
         conn.exec_driver_sql("""
         UPDATE acts
            SET slug = regexp_replace(lower(name), '[^a-z0-9]+','-','g')
          WHERE (slug IS NULL OR slug='') AND name IS NOT NULL;
         """)
-
         conn.exec_driver_sql("""
         UPDATE venues
            SET slug = regexp_replace(lower(name), '[^a-z0-9]+','-','g')
          WHERE (slug IS NULL OR slug='') AND name IS NOT NULL;
         """)
 
-        # -------- indexes (safe if already exist) --------
+        # ===== indexes =====
         conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS acts_slug_idx   ON acts(slug);")
         conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS venues_slug_idx ON venues(slug);")
 
@@ -114,6 +136,7 @@ def seed_if_needed():
         db.commit()
     finally:
         db.close()
+
 
 
 
