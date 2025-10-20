@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from .db import SessionLocal, init_db, seed_if_needed
-from .models import Act, Venue, User
+ param($m)
+            $list = $m.Groups[1].Value
+            if ($list -notmatch '\bBooking\b') { "from .models import $list, Booking" } else { $m.Value }
+        
 
 # ----- Optional security helpers (fallbacks keep login from 500'ing) -----
 try:
@@ -189,3 +192,37 @@ def _bootstrap():
     init_db()
     seed_if_needed()
 # -------------------------------------------
+
+# ------------------- Admin API (read-only for UI) -------------------
+from fastapi import APIRouter
+admin_router = APIRouter(tags=["admin"])
+
+@admin_router.get("/acts")
+def admin_list_acts(db: Session = Depends(get_db)):
+    rows = db.query(Act).order_by(Act.id.desc()).all()
+    return [ _act_to_dict(a) for a in rows ]
+
+@admin_router.get("/venues")
+def admin_list_venues(db: Session = Depends(get_db)):
+    rows = db.query(Venue).order_by(Venue.id.desc()).all()
+    return [ _venue_to_dict(v) for v in rows ]
+
+@admin_router.get("/bookings")
+def admin_list_bookings(db: Session = Depends(get_db)):
+    items = db.query(Booking).order_by(Booking.id.desc()).all()
+    out = []
+    for b in items:
+        out.append({
+            "id": b.id,
+            "customer_name": getattr(b, "customer_name", None),
+            "customer_email": getattr(b, "customer_email", None),
+            "date": getattr(b, "date", None),
+            "message": getattr(b, "message", None),
+            "act_id": getattr(b, "act_id", None),
+            "venue_id": getattr(b, "venue_id", None),
+            "created_at": getattr(b, "created_at", None),
+        })
+    return out
+# --------------------------------------------------------------------
+app.include_router(admin_router, prefix="/api/admin")
+app.include_router(admin_router, prefix="/admin")
