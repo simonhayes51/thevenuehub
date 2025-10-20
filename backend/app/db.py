@@ -10,32 +10,38 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def _ensure_core_columns():
     with engine.begin() as conn:
-        -- users: flags --
+        # users: role flags
         conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_provider boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_business boolean DEFAULT false;")
 
-        -- acts/venues: feature flags (already added before, keep here idempotently) --
+        # acts/venues: premium/featured flags
         conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS featured boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS premium boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS featured boolean DEFAULT false;")
         conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS premium boolean DEFAULT false;")
 
-        -- NEW: slugs for acts & venues --
+        # slugs
         conn.exec_driver_sql("ALTER TABLE acts   ADD COLUMN IF NOT EXISTS slug text;")
         conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS slug text;")
 
-        -- backfill missing slugs from name --
-        conn.exec_driver_sql($@"UPDATE acts
-            SET slug = regexp_replace(lower(name), '[^a-z0-9]+','-','g')
-            WHERE (slug IS NULL OR slug='') AND name IS NOT NULL;")
-        conn.exec_driver_sql($@"UPDATE venues
-            SET slug = regexp_replace(lower(name), '[^a-z0-9]+','-','g')
-            WHERE (slug IS NULL OR slug='') AND name IS NOT NULL;")
+        # backfill missing slugs from name (safe/idempotent)
+        conn.exec_driver_sql("""
+        UPDATE acts
+        SET slug = regexp_replace(lower(name), '[^a-z0-9]+','-','g')
+        WHERE (slug IS NULL OR slug='') AND name IS NOT NULL;
+        """)
 
-        -- unique indexes (safe if exist) --
+        conn.exec_driver_sql("""
+        UPDATE venues
+        SET slug = regexp_replace(lower(name), '[^a-z0-9]+','-','g')
+        WHERE (slug IS NULL OR slug='') AND name IS NOT NULL;
+        """)
+
+        # unique indexes on slugs (safe if already exist)
         conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS acts_slug_idx   ON acts(slug);")
         conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS venues_slug_idx ON venues(slug);")
+
 def init_db():
     # Create tables if they don't exist
     Base.metadata.create_all(bind=engine)
@@ -92,4 +98,5 @@ def seed_if_needed():
         db.commit()
     finally:
         db.close()
+
 
