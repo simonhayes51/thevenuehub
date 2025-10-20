@@ -1,15 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  color-scheme: dark;
-}
-
-.btn {
-  @apply inline-flex items-center justify-center px-4 py-2 rounded-md bg-brand.primary text-black font-semibold hover:opacity-90 transition shadow-glow;
-}
-
-.card {
-  @apply bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition;
-}
+:root{color-scheme:dark}
+.btn{@apply inline-flex items-center justify-center px-4 py-2 rounded-md bg-brand-primary text-black font-semibold hover:opacity-90 transition shadow-glow}
+.card{@apply bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition}
+.badge{@apply px-2 py-1 rounded-full text-xs bg-white/10 border border-white/10}
+.chip{@apply inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm hover:bg-white/10}
+input,textarea,select{@apply w-full px-3 py-2 rounded bg-white/5 border border-white/10}

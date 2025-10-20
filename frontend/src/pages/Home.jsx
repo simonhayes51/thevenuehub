@@ -1,39 +1,22 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-
-export default function Home() {
-  return (
-    <main className="max-w-6xl mx-auto px-4">
-      <section className="py-14 text-center">
-        <h1 className="text-4xl md:text-6xl font-black leading-tight">
-          Book incredible <span className="text-brand.primary">entertainers</span> & <span className="text-brand.secondary">venues</span>
-        </h1>
-        <p className="text-white/70 mt-4 max-w-2xl mx-auto">
-          A modern, fast, entertainment‑first hub. Find bands, DJs, magicians, and stunning venues — all in one place.
-        </p>
-        <div className="mt-8 flex justify-center gap-4">
-          <Link to="/acts" className="btn">Find Acts</Link>
-          <Link to="/venues" className="btn">Explore Venues</Link>
-        </div>
-      </section>
-      <section className="grid md:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="font-bold text-xl mb-2">🔥 Trending Acts</h3>
-          <ul className="space-y-2 text-white/80">
-            <li>Neon Nights Band — 4.8★ — From £800</li>
-            <li>DJ Vortex — 4.6★ — From £500</li>
-            <li>The Close‑Up Magician — 4.9★ — From £350</li>
-          </ul>
-        </div>
-        <div className="card">
-          <h3 className="font-bold text-xl mb-2">🏛️ Featured Venues</h3>
-          <ul className="space-y-2 text-white/80">
-            <li>The Grand Hall — Newcastle — From £1500</li>
-            <li>Coastal View Barn — Sunderland — From £900</li>
-            <li>City Lights Loft — Leeds — From £600</li>
-          </ul>
-        </div>
-      </section>
-    </main>
-  )
+import React,{useEffect,useState} from 'react'
+import {Link} from 'react-router-dom'
+import api from '../api'
+export default function Home(){
+  const [acts,setActs]=useState([]); const [venues,setVenues]=useState([])
+  useEffect(()=>{ api.get('/api/featured/acts').then(r=>setActs(r.data)); api.get('/api/featured/venues').then(r=>setVenues(r.data)) },[])
+  return (<main className="max-w-6xl mx-auto px-4">
+    <section className="py-16 text-center">
+      <h1 className="text-4xl md:text-6xl font-black leading-tight">Book incredible <span className="text-brand-primary">entertainers</span> & <span className="text-brand-secondary">venues</span></h1>
+      <p className="text-white/70 mt-4 max-w-2xl mx-auto">A modern, fast, entertainment-first hub with reviews, galleries and clear pricing.</p>
+      <div className="mt-8 flex justify-center gap-4"><Link to="/acts" className="btn">Find Acts</Link><Link to="/venues" className="btn">Explore Venues</Link><Link to="/join" className="btn">List Your Act</Link></div>
+    </section>
+    <section className="grid md:grid-cols-2 gap-6">
+      <div className="card"><h3 className="font-bold text-xl mb-3">🔥 Trending Acts</h3><div className="grid sm:grid-cols-2 gap-4">
+        {acts.map(a=> (<Link to={`/acts/${a.slug}`} className="card p-0 overflow-hidden" key={a.id}>{a.image_url && <img src={a.image_url} className="w-full h-32 object-cover"/>}<div className="p-3"><div className="font-semibold">{a.name}</div><div className="text-white/70 text-sm">{a.act_type} • {a.location}</div></div></Link>))}
+      </div></div>
+      <div className="card"><h3 className="font-bold text-xl mb-3">🏛️ Featured Venues</h3><div className="grid sm:grid-cols-2 gap-4">
+        {venues.map(v=> (<Link to={`/venues/${v.slug}`} className="card p-0 overflow-hidden" key={v.id}>{v.image_url && <img src={v.image_url} className="w-full h-32 object-cover"/>}<div className="p-3"><div className="font-semibold">{v.name}</div><div className="text-white/70 text-sm">{v.location}</div></div></Link>))}
+      </div></div>
+    </section>
+  </main>)
 }
