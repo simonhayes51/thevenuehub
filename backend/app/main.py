@@ -60,3 +60,11 @@ def on_startup():
 def health(): return {"status":"ok"}
 
 
+
+from .routes.public import router as public_router
+
+# Public API at root
+app.include_router(public_router, prefix="")
+
+# Same public API under /api
+app.include_router(public_router, prefix="/api")
