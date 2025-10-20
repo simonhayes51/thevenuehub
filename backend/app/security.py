@@ -3,7 +3,13 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__ident="2b",              # modern ident
+    bcrypt__truncate_error=False     # don't crash on >72 bytes (truncate instead)
+)
+
 SECRET_KEY = os.getenv("SECRET_KEY", "change_me")
 
 def get_password_hash(password: str) -> str:
