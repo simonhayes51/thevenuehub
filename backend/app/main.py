@@ -5,17 +5,14 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from .db import SessionLocal, init_db, seed_if_needed
- param($m)
-            $list = $m.Groups[1].Value
-            if ($list -notmatch '\bBooking\b') { "from .models import $list, Booking" } else { $m.Value }
-        
+from .models import Act, Venue, User, Booking
 
-# ----- Optional security helpers (fallbacks keep login from 500'ing) -----
+# ---------- Security helpers (fallbacks prevent 500s) ----------
 try:
     from .security import verify_password, create_access_token
 except Exception:
     def verify_password(plain: str, hashed: str) -> bool:
-        # WARNING: replace with real hashing (passlib/bcrypt) in production
+        # WARNING: replace with real hashing in production
         return plain == hashed
     def create_access_token(sub: str) -> str:
         return f"token-{sub}"
@@ -31,11 +28,11 @@ def create_access_token_safe(sub: str) -> str:
         return create_access_token(sub)
     except Exception:
         return f"token-{sub}"
-# -------------------------------------------------------------------------
+# --------------------------------------------------------------
 
 app = FastAPI(title="VenueHub API")
 
-# ---------------- CORS (env-driven) + belt & braces ----------------
+# -------------------- CORS (env-driven) ----------------------
 _ALLOWED = os.getenv("ALLOWED_ORIGINS")
 _default_origins = [
     "https://venuehub-frontend-production.up.railway.app",
@@ -70,9 +67,10 @@ async def _force_cors_headers(request, call_next):
 @app.options("/{rest_of_path:path}")
 def _options_catch_all():
     return Response(status_code=204)
-# -------------------------------------------------------------------
+# -------------------------------------------------------------
 
-# ---------------- DB helper & serializers ----------------
+
+# ----------------- DB helper & serializers -------------------
 def get_db():
     db = SessionLocal()
     try:
@@ -115,16 +113,18 @@ def _venue_to_dict(v: Venue):
         "featured": getattr(v, "featured", False),
         "premium": getattr(v, "premium", False),
     }
-# --------------------------------------------------------
+# -------------------------------------------------------------
 
-# ----------------- Health -----------------
+
+# ------------------------ Health -----------------------------
 @app.get("/health")
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
-# ------------------------------------------
+# -------------------------------------------------------------
 
-# ----------------- Public API (acts/venues) -----------------
+
+# ------------------- Public API (acts/venues) ----------------
 public_router = APIRouter(tags=["public"])
 
 @public_router.get("/acts")
@@ -151,12 +151,49 @@ def get_venue_by_id(venue_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Venue not found")
     return _venue_to_dict(v)
 
-# Expose under both root and /api, so frontend works either way
+# Expose under both root and /api
 app.include_router(public_router, prefix="")
 app.include_router(public_router, prefix="/api")
-# ------------------------------------------------------------
+# -------------------------------------------------------------
 
-# ----------------- Auth (login) -----------------
+
+# ----------------------- Admin API ---------------------------
+admin_router = APIRouter(tags=["admin"])
+
+@admin_router.get("/acts")
+def admin_list_acts(db: Session = Depends(get_db)):
+    rows = db.query(Act).order_by(Act.id.desc()).all()
+    return [_act_to_dict(a) for a in rows]
+
+@admin_router.get("/venues")
+def admin_list_venues(db: Session = Depends(get_db)):
+    rows = db.query(Venue).order_by(Venue.id.desc()).all()
+    return [_venue_to_dict(v) for v in rows]
+
+@admin_router.get("/bookings")
+def admin_list_bookings(db: Session = Depends(get_db)):
+    items = db.query(Booking).order_by(Booking.id.desc()).all()
+    out = []
+    for b in items:
+        out.append({
+            "id": b.id,
+            "customer_name": getattr(b, "customer_name", None),
+            "customer_email": getattr(b, "customer_email", None),
+            "date": getattr(b, "date", None),
+            "message": getattr(b, "message", None),
+            "act_id": getattr(b, "act_id", None),
+            "venue_id": getattr(b, "venue_id", None),
+            "created_at": getattr(b, "created_at", None),
+        })
+    return out
+
+# Mount at both /api/admin and /admin
+app.include_router(admin_router, prefix="/api/admin")
+app.include_router(admin_router, prefix="/admin")
+# -------------------------------------------------------------
+
+
+# ------------------------ Auth/Login -------------------------
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -184,45 +221,12 @@ def login_root(data: LoginRequest, db: Session = Depends(get_db)):
 @app.post("/api/auth/login")
 def login_api(data: LoginRequest, db: Session = Depends(get_db)):
     return _do_login(data, db)
-# ---------------------------------------------
+# -------------------------------------------------------------
 
-# ----------------- Startup -----------------
+
+# ----------------------- Startup hook ------------------------
 @app.on_event("startup")
 def _bootstrap():
     init_db()
     seed_if_needed()
-# -------------------------------------------
-
-# ------------------- Admin API (read-only for UI) -------------------
-from fastapi import APIRouter
-admin_router = APIRouter(tags=["admin"])
-
-@admin_router.get("/acts")
-def admin_list_acts(db: Session = Depends(get_db)):
-    rows = db.query(Act).order_by(Act.id.desc()).all()
-    return [ _act_to_dict(a) for a in rows ]
-
-@admin_router.get("/venues")
-def admin_list_venues(db: Session = Depends(get_db)):
-    rows = db.query(Venue).order_by(Venue.id.desc()).all()
-    return [ _venue_to_dict(v) for v in rows ]
-
-@admin_router.get("/bookings")
-def admin_list_bookings(db: Session = Depends(get_db)):
-    items = db.query(Booking).order_by(Booking.id.desc()).all()
-    out = []
-    for b in items:
-        out.append({
-            "id": b.id,
-            "customer_name": getattr(b, "customer_name", None),
-            "customer_email": getattr(b, "customer_email", None),
-            "date": getattr(b, "date", None),
-            "message": getattr(b, "message", None),
-            "act_id": getattr(b, "act_id", None),
-            "venue_id": getattr(b, "venue_id", None),
-            "created_at": getattr(b, "created_at", None),
-        })
-    return out
-# --------------------------------------------------------------------
-app.include_router(admin_router, prefix="/api/admin")
-app.include_router(admin_router, prefix="/admin")
+# -------------------------------------------------------------
