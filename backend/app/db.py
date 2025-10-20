@@ -9,32 +9,33 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def _ensure_core_columns():
-    # Postgres-safe: add columns only if missing (no DO Then redeploy the backend service. blocks)
     with engine.begin() as conn:
-        # users
-        conn.exec_driver_sql(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;"
-        )
-        conn.exec_driver_sql(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_provider boolean DEFAULT false;"
-        )
-        conn.exec_driver_sql(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_business boolean DEFAULT false;"
-        )
-        # acts / venues premium flags (also safe)
-        conn.exec_driver_sql(
-            "ALTER TABLE acts ADD COLUMN IF NOT EXISTS featured boolean DEFAULT false;"
-        )
-        conn.exec_driver_sql(
-            "ALTER TABLE acts ADD COLUMN IF NOT EXISTS premium boolean DEFAULT false;"
-        )
-        conn.exec_driver_sql(
-            "ALTER TABLE venues ADD COLUMN IF NOT EXISTS featured boolean DEFAULT false;"
-        )
-        conn.exec_driver_sql(
-            "ALTER TABLE venues ADD COLUMN IF NOT EXISTS premium boolean DEFAULT false;"
-        )
+        -- users: flags --
+        conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;")
+        conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_provider boolean DEFAULT false;")
+        conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_business boolean DEFAULT false;")
 
+        -- acts/venues: feature flags (already added before, keep here idempotently) --
+        conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS featured boolean DEFAULT false;")
+        conn.exec_driver_sql("ALTER TABLE acts ADD COLUMN IF NOT EXISTS premium boolean DEFAULT false;")
+        conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS featured boolean DEFAULT false;")
+        conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS premium boolean DEFAULT false;")
+
+        -- NEW: slugs for acts & venues --
+        conn.exec_driver_sql("ALTER TABLE acts   ADD COLUMN IF NOT EXISTS slug text;")
+        conn.exec_driver_sql("ALTER TABLE venues ADD COLUMN IF NOT EXISTS slug text;")
+
+        -- backfill missing slugs from name --
+        conn.exec_driver_sql($@"UPDATE acts
+            SET slug = regexp_replace(lower(name), '[^a-z0-9]+','-','g')
+            WHERE (slug IS NULL OR slug='') AND name IS NOT NULL;")
+        conn.exec_driver_sql($@"UPDATE venues
+            SET slug = regexp_replace(lower(name), '[^a-z0-9]+','-','g')
+            WHERE (slug IS NULL OR slug='') AND name IS NOT NULL;")
+
+        -- unique indexes (safe if exist) --
+        conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS acts_slug_idx   ON acts(slug);")
+        conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS venues_slug_idx ON venues(slug);")
 def init_db():
     # Create tables if they don't exist
     Base.metadata.create_all(bind=engine)
@@ -91,3 +92,4 @@ def seed_if_needed():
         db.commit()
     finally:
         db.close()
+
