@@ -4,14 +4,25 @@ import os
 from fastapi import FastAPI, Depends, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from .db import SessionLocal, init_db, seed_if_needed
-from .models import Act, Venue
+from .models import Act, Venue, User
 from fastapi import APIRouter
 
+# Optional security helpers — replace with real hashing if you have it
+try:
+    from .security import verify_password, create_access_token
+except Exception:
+    def verify_password(plain: str, hashed: str) -> bool:
+        return plain == hashed
+
+    def create_access_token(sub: str) -> str:
+        return f"token-{sub}"
+
+
+# -------------------- App + CORS --------------------
 app = FastAPI(title="VenueHub API")
 
-# -------------------- CORS (env-driven) --------------------
-# ALLOWED_ORIGINS can be "*" or a comma-separated list of origins.
 _ALLOWED = os.getenv("ALLOWED_ORIGINS")
 _default_origins = [
     "https://venuehub-frontend-production.up.railway.app",
@@ -30,15 +41,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Fallback CORS headers (belt & braces)
 @app.middleware("http")
 async def _force_cors_headers(request, call_next):
     if request.method == "OPTIONS":
         resp = Response(status_code=204)
     else:
         resp = await call_next(request)
-
-    # Always set permissive CORS headers (safe because we use token auth, not cookies)
     resp.headers.setdefault("Access-Control-Allow-Origin", "*" if wildcard else request.headers.get("origin", ""))
     resp.headers.setdefault("Vary", "Origin")
     resp.headers.setdefault("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
@@ -46,14 +54,13 @@ async def _force_cors_headers(request, call_next):
     resp.headers.setdefault("Access-Control-Allow-Credentials", "true" if allow_credentials else "false")
     return resp
 
-# Catch-all OPTIONS so preflights never 404
 @app.options("/{rest_of_path:path}")
 def _options_catch_all():
     return Response(status_code=204)
-# -----------------------------------------------------------
+# -----------------------------------------------------
 
 
-# --------------------- DB utilities ------------------------
+# --------------------- DB helper ---------------------
 def get_db():
     db = SessionLocal()
     try:
@@ -62,6 +69,7 @@ def get_db():
         db.close()
 
 
+# -------------------- Serializers --------------------
 def _act_to_dict(a: Act):
     if a is None:
         return None
@@ -81,7 +89,6 @@ def _act_to_dict(a: Act):
         "premium": getattr(a, "premium", False),
     }
 
-
 def _venue_to_dict(v: Venue):
     if v is None:
         return None
@@ -98,18 +105,18 @@ def _venue_to_dict(v: Venue):
         "featured": getattr(v, "featured", False),
         "premium": getattr(v, "premium", False),
     }
-# -----------------------------------------------------------
+# -----------------------------------------------------
 
 
-# ------------------------ Health ---------------------------
+# ---------------------- Health ----------------------
 @app.get("/health")
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
-# -----------------------------------------------------------
+# ----------------------------------------------------
 
 
-# -------------- Public API router (acts/venues) ------------
+# ------------------- Public API ---------------------
 public_router = APIRouter(tags=["public"])
 
 @public_router.get("/acts")
@@ -136,18 +143,45 @@ def get_venue_by_id(venue_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Venue not found")
     return _venue_to_dict(v)
 
-# Mount the same router at root and at /api
 app.include_router(public_router, prefix="")
 app.include_router(public_router, prefix="/api")
-# -----------------------------------------------------------
+# -----------------------------------------------------
 
 
-# ---------------------- Startup hooks ----------------------
+# ------------------- Auth/Login ----------------------
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+def _user_payload(u: User) -> dict:
+    return {
+        "id": u.id,
+        "email": u.email,
+        "is_admin": getattr(u, "is_admin", False),
+        "is_provider": getattr(u, "is_provider", False),
+        "is_business": getattr(u, "is_business", False),
+    }
+
+def _do_login(data: LoginRequest, db: Session) -> dict:
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user or not verify_password(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_access_token(str(user.id))
+    return {"token": token, "user": _user_payload(user)}
+
+@app.post("/auth/login")
+def login_root(data: LoginRequest, db: Session = Depends(get_db)):
+    return _do_login(data, db)
+
+@app.post("/api/auth/login")
+def login_api(data: LoginRequest, db: Session = Depends(get_db)):
+    return _do_login(data, db)
+# -----------------------------------------------------
+
+
+# ------------------ Startup Hook ---------------------
 @app.on_event("startup")
 def _bootstrap():
-    # Create tables, add missing columns (handled inside init_db/your db layer),
-    # and seed if SEED=1
     init_db()
     seed_if_needed()
-# -----------------------------------------------------------
-
+# -----------------------------------------------------
