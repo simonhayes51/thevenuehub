@@ -20,3 +20,4 @@ def on_startup():
     init_db(); seed_if_needed()
 @app.get("/api/health")
 def health(): return {"status":"ok"}
+
