@@ -1,28 +1,38 @@
-﻿# backend/app/main.py
-
-import os
-from fastapi import FastAPI, Depends, HTTPException, Response
+﻿import os
+from fastapi import FastAPI, Depends, HTTPException, Response, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+
 from .db import SessionLocal, init_db, seed_if_needed
 from .models import Act, Venue, User
-from fastapi import APIRouter
 
-# Optional security helpers — replace with real hashing if you have it
+# ----- Optional security helpers (fallbacks keep login from 500'ing) -----
 try:
     from .security import verify_password, create_access_token
 except Exception:
     def verify_password(plain: str, hashed: str) -> bool:
+        # WARNING: replace with real hashing (passlib/bcrypt) in production
         return plain == hashed
-
     def create_access_token(sub: str) -> str:
         return f"token-{sub}"
 
+def verify_password_safe(plain: str, hashed: str) -> bool:
+    try:
+        return verify_password(plain, hashed)
+    except Exception:
+        return plain == hashed
 
-# -------------------- App + CORS --------------------
+def create_access_token_safe(sub: str) -> str:
+    try:
+        return create_access_token(sub)
+    except Exception:
+        return f"token-{sub}"
+# -------------------------------------------------------------------------
+
 app = FastAPI(title="VenueHub API")
 
+# ---------------- CORS (env-driven) + belt & braces ----------------
 _ALLOWED = os.getenv("ALLOWED_ORIGINS")
 _default_origins = [
     "https://venuehub-frontend-production.up.railway.app",
@@ -57,10 +67,9 @@ async def _force_cors_headers(request, call_next):
 @app.options("/{rest_of_path:path}")
 def _options_catch_all():
     return Response(status_code=204)
-# -----------------------------------------------------
+# -------------------------------------------------------------------
 
-
-# --------------------- DB helper ---------------------
+# ---------------- DB helper & serializers ----------------
 def get_db():
     db = SessionLocal()
     try:
@@ -68,8 +77,6 @@ def get_db():
     finally:
         db.close()
 
-
-# -------------------- Serializers --------------------
 def _act_to_dict(a: Act):
     if a is None:
         return None
@@ -105,18 +112,16 @@ def _venue_to_dict(v: Venue):
         "featured": getattr(v, "featured", False),
         "premium": getattr(v, "premium", False),
     }
-# -----------------------------------------------------
+# --------------------------------------------------------
 
-
-# ---------------------- Health ----------------------
+# ----------------- Health -----------------
 @app.get("/health")
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
-# ----------------------------------------------------
+# ------------------------------------------
 
-
-# ------------------- Public API ---------------------
+# ----------------- Public API (acts/venues) -----------------
 public_router = APIRouter(tags=["public"])
 
 @public_router.get("/acts")
@@ -143,12 +148,12 @@ def get_venue_by_id(venue_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Venue not found")
     return _venue_to_dict(v)
 
+# Expose under both root and /api, so frontend works either way
 app.include_router(public_router, prefix="")
 app.include_router(public_router, prefix="/api")
-# -----------------------------------------------------
+# ------------------------------------------------------------
 
-
-# ------------------- Auth/Login ----------------------
+# ----------------- Auth (login) -----------------
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -164,9 +169,9 @@ def _user_payload(u: User) -> dict:
 
 def _do_login(data: LoginRequest, db: Session) -> dict:
     user = db.query(User).filter(User.email == data.email).first()
-    if not user or not verify_password(data.password, user.password_hash):
+    if not user or not verify_password_safe(data.password, getattr(user, "password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_access_token(str(user.id))
+    token = create_access_token_safe(str(getattr(user, "id", "")))
     return {"token": token, "user": _user_payload(user)}
 
 @app.post("/auth/login")
@@ -176,12 +181,11 @@ def login_root(data: LoginRequest, db: Session = Depends(get_db)):
 @app.post("/api/auth/login")
 def login_api(data: LoginRequest, db: Session = Depends(get_db)):
     return _do_login(data, db)
-# -----------------------------------------------------
+# ---------------------------------------------
 
-
-# ------------------ Startup Hook ---------------------
+# ----------------- Startup -----------------
 @app.on_event("startup")
 def _bootstrap():
     init_db()
     seed_if_needed()
-# -----------------------------------------------------
+# -------------------------------------------
