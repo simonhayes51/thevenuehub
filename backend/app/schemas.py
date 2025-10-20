@@ -5,9 +5,12 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+from pydantic import BaseModel  # 👈 you can now remove EmailStr
+
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
+
 
 class ActBase(BaseModel):
     name: str
