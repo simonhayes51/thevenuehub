@@ -1,0 +1,1 @@
+export function PremiumBadge(){return <span className="pill" style={{background:"#9b5cff33",borderColor:"#9b5cff66",color:"#9b5cff"}}>Premium</span>} export function FeaturedBadge(){return <span className="pill" style={{background:"#00e7f033",borderColor:"#00e7f066",color:"#00e7f0"}}>Featured</span>}

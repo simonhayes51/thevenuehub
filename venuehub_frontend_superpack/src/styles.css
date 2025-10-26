@@ -1,0 +1,12 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+:root { color-scheme: dark; } html,body,#root{height:100%;background:#0c0f17} body{color:#fff}
+.card{border-radius:12px;background:#121728cc;backdrop-filter:saturate(120%) blur(8px);border:1px solid #ffffff0d;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:.75rem;padding:.5rem 1rem;font-weight:500}
+.btn-primary{background:#9b5cff;color:#fff;box-shadow:0 0 0 2px #9b5cff59,0 0 30px #00e7f033}
+.btn-ghost{border:1px solid #ffffff1a;background:#ffffff0d}
+.input{width:100%;border-radius:.75rem;background:#ffffff0d;border:1px solid #ffffff1a;padding:.5rem .75rem;outline:none}
+.container-2xl{max-width:1200px;margin:0 auto;padding:0 1rem}
+.section{padding:2.5rem 0} .pill{display:inline-flex;align-items:center;gap:.5rem;border-radius:999px;padding:.25rem .75rem;font-size:.75rem;background:#ffffff1a;border:1px solid #ffffff1a}
+.hero-grad{background:
+  radial-gradient(800px 400px at 10% -10%, rgba(155,92,255,0.25), transparent),
+  radial-gradient(800px 400px at 90% 0%, rgba(0,231,240,0.18), transparent)}
