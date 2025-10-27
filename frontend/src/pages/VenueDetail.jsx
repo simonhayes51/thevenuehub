@@ -1,50 +1,47 @@
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
-import ReviewList from '../components/ReviewList'
-import ShortlistButton from '../components/ShortlistButton'
-import { useParams } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import Gallery from "../components/Gallery.jsx";
+import Reviews from "../components/Reviews.jsx";
+import EnquiryForm from "../components/EnquiryForm.jsx";
+import { useShortlist } from "../context/ShortlistContext.jsx";
 
-const API = import.meta.env.VITE_API_BASE
+const API = import.meta.env.VITE_API_BASE || "";
 
 export default function VenueDetail(){
-  const { id } = useParams()
-  const [venue,setVenue] = useState(null)
-  const [reviews,setReviews] = useState([])
+  const {id} = useParams();
+  const [data,setData] = useState(null);
+  const [err,setErr] = useState(null);
+  const {add} = useShortlist();
 
   useEffect(()=>{
-    fetch(`${API}/venues/${id}`).then(r=>r.json()).then(setVenue).catch(()=>{})
-    fetch(`${API}/api/reviews?venue_id=${id}`).then(r=>r.json()).then(setReviews).catch(()=>{})
-  },[id])
+    fetch(`${API}/venues/${id}`)
+      .then(r=>r.ok?r.json():Promise.reject(new Error(r.status)))
+      .then(setData).catch(()=>fetch(`${API}/venues`).then(r=>r.json()).then(list=>setData(list.find(x=>String(x.id)===id))));
+  },[id]);
 
-  if(!venue) return (<div><Navbar/><div className="container-2xl section">Loading…</div></div>)
+  if(!data && !err) return <main className="container-h py-10"><div className="skeleton h-44 w-full"></div></main>;
+  if(err) return <main className="container-h py-10">Failed to load</main>;
 
+  const images = data?.images || (data?.image_url?[data.image_url]:[]);
   return (
-    <div>
-      <Navbar/>
-      <div className="container-2xl section grid md:grid-cols-12 gap-6">
-        <div className="md:col-span-7 card overflow-hidden">
-          <img src={venue.image_url} alt={venue.name} className="w-full object-cover"/>
-        </div>
-        <div className="md:col-span-5">
-          <h1 className="font-display text-3xl">{venue.name}</h1>
-          <div className="mt-2 flex items-center gap-3">
-            <span className="pill">{venue.style||'Venue'}</span>
-            <span className="text-white/70 text-sm">{venue.location}</span>
-          </div>
-          {venue.price_from && <div className="mt-3 text-white/80">from £{Math.round(venue.price_from)}</div>}
-          <p className="mt-4 text-white/80">{venue.amenities}</p>
-          <div className="mt-5 flex items-center gap-3">
-            <a href={`/enquire/venue/${venue.id}`} className="btn-primary">Enquire</a>
-            <ShortlistButton id={venue.id} type="venue" />
-          </div>
-          <div className="mt-8">
-            <h2 className="font-display text-xl mb-2">Reviews</h2>
-            <ReviewList items={reviews}/>
+    <main className="container-h py-10 grid lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-4">
+        <Gallery images={images}/>
+        <div className="card p-5">
+          <h1 className="text-2xl font-semibold">{data?.name}</h1>
+          <div className="text-white/60 text-sm">{data?.location}</div>
+          <div className="text-white/70 mt-3">{data?.description || "No description provided."}</div>
+          <div className="mt-4 flex gap-2">
+            {data?.capacity && <span className="pill">Capacity {data.capacity}</span>}
+            {data?.price_from && <span className="pill">From £{data.price_from}</span>}
+            <button className="pill" onClick={()=>add("venues", data)}>Save</button>
           </div>
         </div>
+        <Reviews items={data?.reviews ?? []}/>
       </div>
-      <Footer/>
-    </div>
-  )
+      <div className="space-y-4">
+        <EnquiryForm targetType="venue" targetId={id}/>
+      </div>
+    </main>
+  );
 }

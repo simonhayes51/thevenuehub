@@ -53,3 +53,16 @@ class Lead(Base):
     __tablename__="leads"
     id=Column(Integer, primary_key=True); booking_id=Column(Integer, ForeignKey("bookings.id"))
     unlocked_by_business_id=Column(Integer, ForeignKey("businesses.id"), nullable=True)
+from sqlalchemy import Column, Integer, Text, TIMESTAMP
+from .db import Base
+
+class Enquiry(Base):
+    __tablename__ = "enquiries"
+    id = Column(Integer, primary_key=True, index=True)
+    customer_name = Column(Text)
+    customer_email = Column(Text)
+    date = Column(Text)
+    message = Column(Text)
+    act_id = Column(Integer)
+    venue_id = Column(Integer)
+    created_at = Column(TIMESTAMP, nullable=True)

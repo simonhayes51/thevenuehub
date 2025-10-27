@@ -1,33 +1,26 @@
-import { useState } from 'react'
-import Logo from './Logo'
+import { NavLink, Link } from "react-router-dom";
+import { useShortlist } from "../context/ShortlistContext.jsx";
+
 export default function Navbar(){
-  const [open,setOpen] = useState(false)
+  const {toggleOpen, items} = useShortlist();
+  const count = (items?.acts?.length||0) + (items?.venues?.length||0);
+  const link = "px-3 py-2 rounded-lg hover:bg-white/5 transition text-white/90";
+  const active = "bg-white/10 text-white";
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-brand.bg/70 backdrop-blur">
-      <div className="container-2xl flex items-center justify-between h-14">
-        <Logo />
-        <nav className="hidden md:flex items-center gap-6 text-sm">
-          <a href="/">Home</a>
-          <a href="/acts">Acts</a>
-          <a href="/venues">Venues</a>
-          <a href="/join" className="pill">Add My Services</a>
-          <a href="/shortlist" className="pill">Shortlist</a>
-          <a href="/login" className="btn-ghost">Login</a>
+    <header className="sticky top-0 z-40 border-b border-line backdrop-blur bg-bg/75">
+      <div className="container-h h-16 flex items-center justify-between gap-3">
+        <Link to="/" className="font-display font-extrabold tracking-tight text-lg flex items-center gap-2">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-brand-primary text-black">🎭</span>
+          VenueHub
+        </Link>
+        <nav className="flex items-center gap-1">
+          <NavLink to="/acts" className={({isActive})=>`${link} ${isActive?active:""}`}>Acts</NavLink>
+          <NavLink to="/venues" className={({isActive})=>`${link} ${isActive?active:""}`}>Venues</NavLink>
+          <NavLink to="/pricing" className={({isActive})=>`${link} ${isActive?active:""}`}>Pricing</NavLink>
+          <NavLink to="/join" className="btn ml-1">Add My Services</NavLink>
+          <button className="pill ml-1" onClick={toggleOpen}>Shortlist {count? `(${count})` : ""}</button>
         </nav>
-        <button className="md:hidden btn-ghost" onClick={()=>setOpen(!open)}>☰</button>
       </div>
-      {open && (
-        <div className="md:hidden border-t border-white/10 px-4 pb-3">
-          <div className="flex flex-col gap-3 py-3">
-            <a href="/">Home</a>
-            <a href="/acts">Acts</a>
-            <a href="/venues">Venues</a>
-            <a href="/join" className="pill">Add My Services</a>
-            <a href="/shortlist" className="pill">Shortlist</a>
-            <a href="/login" className="btn-ghost w-max">Login</a>
-          </div>
-        </div>
-      )}
     </header>
-  )
+  );
 }
