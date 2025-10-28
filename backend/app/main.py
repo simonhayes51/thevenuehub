@@ -803,3 +803,10 @@ def debug_submissions_last(limit: int = 10, db: Session = Depends(get_db)):
             d["payload"] = {}
         out.append(d)
     return out
+# === venuehub: submissions reject endpoint ===
+@app.post("/admin/submissions/{submission_id}/reject")
+@app.post("/api/admin/submissions/{submission_id}/reject")
+def admin_reject_submission(submission_id: int, db: Session = Depends(get_db)):
+    db.execute(text("UPDATE submissions SET status = 'rejected' WHERE id = :id"), {"id": submission_id})
+    db.commit()
+    return {"ok": True}
