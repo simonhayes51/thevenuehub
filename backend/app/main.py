@@ -644,3 +644,88 @@ def startup():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
+# === venuehub patch: auth/register + admin summary ===
+
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.exc import IntegrityError
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    is_provider: bool | None = False
+    is_business: bool | None = False
+
+@app.post("/auth/register")
+@app.post("/api/auth/register")
+def register_user(data: RegisterRequest, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == data.email).first()
+    if existing:
+        raise HTTPException(409, "Email already registered")
+
+    pwd_hash = get_password_hash(data.password)
+    u = User(
+        email=data.email,
+        password_hash=pwd_hash,
+        is_admin=False,
+        is_provider=bool(data.is_provider),
+        is_business=bool(data.is_business),
+    )
+    db.add(u)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Email already registered")
+    db.refresh(u)
+    return {
+        "user": {
+            "id": u.id,
+            "email": u.email,
+            "is_admin": bool(getattr(u, "is_admin", False)),
+            "is_provider": bool(getattr(u, "is_provider", False)),
+            "is_business": bool(getattr(u, "is_business", False)),
+        }
+    }
+
+@app.get("/auth/me")
+@app.get("/api/auth/me")
+def me(email: EmailStr = Query(None), db: Session = Depends(get_db)):
+    if not email:
+        raise HTTPException(400, "email is required")
+    u = db.query(User).filter(User.email == email).first()
+    if not u:
+        raise HTTPException(404, "User not found")
+    return {
+        "id": u.id,
+        "email": u.email,
+        "is_admin": bool(getattr(u, "is_admin", False)),
+        "is_provider": bool(getattr(u, "is_provider", False)),
+        "is_business": bool(getattr(u, "is_business", False)),
+    }
+
+@app.get("/admin/summary")
+@app.get("/api/admin/summary")
+def admin_summary(db: Session = Depends(get_db)):
+    acts = db.query(Act).count()
+    venues = db.query(Venue).count()
+    bookings = db.query(Booking).count()
+    pending_reviews = db.execute(text("SELECT COUNT(*) AS c FROM reviews WHERE status='pending'")).mappings().first()["c"]
+    pending_subs = db.execute(text("SELECT COUNT(*) AS c FROM submissions WHERE status='pending'")).mappings().first()["c"]
+    return {
+        "acts": acts,
+        "venues": venues,
+        "bookings": bookings,
+        "pending_reviews": pending_reviews,
+        "pending_submissions": pending_subs,
+    }
+
+@app.on_event("startup")
+def _vh_email_unique_index():
+    try:
+        with SessionLocal() as db:
+            db.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email ON users(email)"))
+            db.commit()
+    except Exception:
+        pass
+
+# === /venuehub patch end ===
