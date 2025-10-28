@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 export default function Gallery({images=[]}){
   const [i,setI] = useState(0);
   if(!images?.length) return <div className="h-56 bg-white/5 rounded-2xl" />;

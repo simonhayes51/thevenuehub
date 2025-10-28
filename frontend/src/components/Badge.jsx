@@ -1,4 +1,4 @@
-export default function Badge({children, tone="brand"}){
+﻿export default function Badge({children, tone="brand"}){
   const tones = {
     brand: "bg-brand-primary/15 text-brand-primary border-brand-primary/25",
     blue: "bg-brand-blue/15 text-brand-blue border-brand-blue/25",

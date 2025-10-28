@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 const API = import.meta.env.VITE_API_BASE || "";
 
 export default function Join(){
@@ -72,7 +72,7 @@ export default function Join(){
             <div><span className="text-white/60 text-sm">Email:</span> {payload.email}</div>
             <div><span className="text-white/60 text-sm">Location:</span> {payload.location}</div>
             {payload.type==="act" ? <div><span className="text-white/60 text-sm">Genre:</span> {payload.genre}</div> : <div><span className="text-white/60 text-sm">Capacity:</span> {payload.capacity}</div>}
-            <div><span className="text-white/60 text-sm">Website:</span> {payload.website || "—"}</div>
+            <div><span className="text-white/60 text-sm">Website:</span> {payload.website || "â€”"}</div>
           </div>
         )}
 
@@ -81,7 +81,7 @@ export default function Join(){
           {step<3 ? <button onClick={next} className="btn">Next</button> : <button onClick={submit} className="btn">Submit</button>}
         </div>
 
-        {status==="ok" && <div className="text-emerald-300">Thanks! Weʼll review and email you shortly.</div>}
+        {status==="ok" && <div className="text-emerald-300">Thanks! WeÊ¼ll review and email you shortly.</div>}
         {status==="error" && <div className="text-rose-300">Something went wrong. Try again later.</div>}
       </div>
     </main>

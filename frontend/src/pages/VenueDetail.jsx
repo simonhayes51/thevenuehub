@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Gallery from "../components/Gallery.jsx";
 import Reviews from "../components/Reviews.jsx";
@@ -33,7 +33,7 @@ export default function VenueDetail(){
           <div className="text-white/70 mt-3">{data?.description || "No description provided."}</div>
           <div className="mt-4 flex gap-2">
             {data?.capacity && <span className="pill">Capacity {data.capacity}</span>}
-            {data?.price_from && <span className="pill">From £{data.price_from}</span>}
+            {data?.price_from && <span className="pill">From Â£{data.price_from}</span>}
             <button className="pill" onClick={()=>add("venues", data)}>Save</button>
           </div>
         </div>

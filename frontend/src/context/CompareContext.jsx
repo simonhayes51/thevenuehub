@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 const Ctx = React.createContext();
 export function CompareProvider({children}){
   const [type,setType] = React.useState("acts");

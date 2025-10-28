@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 const API = import.meta.env.VITE_API_BASE || "";
 
 export default function EnquiryForm({targetType, targetId}){
@@ -27,8 +27,8 @@ export default function EnquiryForm({targetType, targetId}){
       </div>
       <div className="flex items-center gap-2">
         <button className="btn">Send</button>
-        {status==="ok" && <div className="text-emerald-300 text-sm">Sent. Weʼll pass it on!</div>}
-        {status==="err" && <div className="text-rose-300 text-sm">Couldnʼt send right now.</div>}
+        {status==="ok" && <div className="text-emerald-300 text-sm">Sent. WeÊ¼ll pass it on!</div>}
+        {status==="err" && <div className="text-rose-300 text-sm">CouldnÊ¼t send right now.</div>}
       </div>
     </form>
   );

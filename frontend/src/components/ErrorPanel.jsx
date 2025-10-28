@@ -1,4 +1,4 @@
-export default function ErrorPanel({error}){
+﻿export default function ErrorPanel({error}){
   return (
     <div className="card p-5 border border-red-500/40">
       <div className="text-red-300 font-semibold">Error</div>

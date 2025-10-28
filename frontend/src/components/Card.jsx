@@ -1,4 +1,4 @@
-export default function Card({image, title, subtitle, meta}){
+﻿export default function Card({image, title, subtitle, meta}){
   return (
     <article className="card overflow-hidden">
       {image ? <img src={image} alt="" className="h-44 w-full object-cover" /> : <div className="h-44 bg-white/5" />}

@@ -1,4 +1,4 @@
-import { useCompare } from "../context/CompareContext.jsx";
+﻿import { useCompare } from "../context/CompareContext.jsx";
 import { FaXmark } from "react-icons/fa6";
 
 export default function CompareModal(){
@@ -37,7 +37,7 @@ export default function CompareModal(){
                 <div key={label} className="py-3 text-white/60 border-t border-line">{label}</div>
                 {picked.map(x=>
                   <div key={label+"-"+x.id} className="py-3 border-t border-line">
-                    {String(x?.[key] ?? "—")}
+                    {String(x?.[key] ?? "â€”")}
                   </div>
                 )}
               </>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { FaFilter, FaSort } from "react-icons/fa6";
 import CardAct from "../components/CardAct.jsx";
 import LoadingGrid from "../components/LoadingGrid.jsx";
@@ -50,7 +50,7 @@ export default function Acts(){
         <div className="flex items-center gap-2">
           <div className="pill">
             <FaFilter className="opacity-70"/>
-            <input className="bg-transparent outline-none placeholder:text-white/40" placeholder="Search by name, genre, city…" value={q} onChange={e=>setQ(e.target.value)}/>
+            <input className="bg-transparent outline-none placeholder:text-white/40" placeholder="Search by name, genre, cityâ€¦" value={q} onChange={e=>setQ(e.target.value)}/>
           </div>
           <div className="pill">
             <FaSort className="opacity-70"/>

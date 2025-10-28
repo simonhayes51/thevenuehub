@@ -1,4 +1,4 @@
-import { useShortlist } from "../context/ShortlistContext.jsx";
+﻿import { useShortlist } from "../context/ShortlistContext.jsx";
 import { useCompare } from "../context/CompareContext.jsx";
 import { Link } from "react-router-dom";
 import { FaXmark } from "react-icons/fa6";
@@ -12,11 +12,11 @@ export default function ShortlistDrawer(){
     <div className="drawer" style={{transform:`translateY(${open?0: '70%'})`, transition:"transform .25s"}}>
       <div className="p-4 flex items-center justify-between border-b border-line">
         <div className="font-semibold">Shortlist</div>
-        <div className="text-sm text-white/60">{items.acts.length} acts • {items.venues.length} venues</div>
+        <div className="text-sm text-white/60">{items.acts.length} acts â€¢ {items.venues.length} venues</div>
         <button className="pill" onClick={toggleOpen}><FaXmark/></button>
       </div>
       <div className="p-4 space-y-4 max-h-[55vh] overflow-auto">
-        {!has && <div className="text-white/60">Your shortlist is empty. Tap “Save” on an act or venue.</div>}
+        {!has && <div className="text-white/60">Your shortlist is empty. Tap â€œSaveâ€ on an act or venue.</div>}
         {["acts","venues"].map(type => (
           (items[type]??[]).length>0 && (
             <div key={type}>
@@ -27,7 +27,7 @@ export default function ShortlistDrawer(){
                     <img src={x.image_url ?? ""} alt="" className="w-14 h-14 object-cover rounded-xl bg-white/5"/>
                     <div className="flex-1">
                       <div className="font-medium leading-tight">{x.name}</div>
-                      <div className="text-xs text-white/50">{x.location || x.genre || "—"}</div>
+                      <div className="text-xs text-white/50">{x.location || x.genre || "â€”"}</div>
                       <div className="mt-2 flex gap-2">
                         <Link to={`/${type.slice(0,-1)}/${x.id}`} className="pill">Details</Link>
                         <button className="pill" onClick={()=>pick(type, x)}>Compare</button>

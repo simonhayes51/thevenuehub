@@ -1,4 +1,4 @@
-import { FaStar } from "react-icons/fa6";
+﻿import { FaStar } from "react-icons/fa6";
 export default function RatingStars({rating=0}){
   const r = Math.max(0, Math.min(5, Number(rating)||0));
   return (

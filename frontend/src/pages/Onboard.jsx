@@ -1,68 +1,60 @@
-﻿import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import SEO from "../components/SEO.jsx";
-import api from "../lib/api.js";
-
-const schema = z.object({
-  type: z.enum(["act","venue"]),
-  name: z.string().min(2,"Name required"),
-  location: z.string().min(2,"Location required"),
-  email: z.string().email().optional(),
-  price_from: z.string().optional(),
-  services: z.string().optional(),
-  description: z.string().optional(),
-});
+﻿import { useState } from "react";
+import { postJSON } from "../lib/api";
 
 export default function Onboard(){
-  const { register, handleSubmit, formState:{errors,isSubmitting} } = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: { type:"act" }
-  });
-  async function submit(values){
+  const [role, setRole] = useState("act");
+  const [name, setName] = useState("");
+  const [location, setLocation] = useState("");
+  const [price, setPrice] = useState("");
+  const [genres, setGenres] = useState("");
+  const [capacity, setCapacity] = useState("");
+  const [style, setStyle] = useState("");
+  const [msg, setMsg] = useState("");
+
+  async function submit(e){
+    e.preventDefault();
+    setMsg("Submitting…");
     try{
-      await api.providersRegister(values);
-      alert("Thanks! Your profile was submitted. We’ll email you after review.");
-    }catch(e){
-      alert("Couldn’t submit right now.");
+      const payload = {
+        role,
+        name,
+        location,
+        price_from: price? Number(price): null,
+        genres: role==="act" ? genres : null,
+        capacity: role==="venue" ? Number(capacity||0) : null,
+        style: role==="venue" ? style : null,
+      };
+      if(role==="act") await postJSON("/providers/acts", payload);
+      else await postJSON("/providers/venues", payload);
+      setMsg("Thanks! We’ll review and publish shortly.");
+    }catch(err){
+      setMsg("Something went wrong. Please try again.");
     }
   }
-  const I = (p)=> <input className="input" {...p} />;
-  const T = (p)=> <textarea className="input min-h-[120px]" {...p} />;
 
   return (
-    <main className="container-h py-10 space-y-6">
-      <SEO title="Add My Services" description="Join VenueHub as an act or a venue." />
-      <h1 className="text-3xl font-semibold">Add My Services</h1>
-      <form onSubmit={handleSubmit(submit)} className="card p-5 space-y-5">
-        <div className="grid sm:grid-cols-2 gap-3">
-          <label className="space-y-1">
-            <div className="text-sm text-white/70">I am a</div>
-            <select className="input" {...register("type")}><option value="act">Act</option><option value="venue">Venue</option></select>
-          </label>
-          <label className="space-y-1">
-            <div className="text-sm text-white/70">Name</div>
-            <I {...register("name")}/>{errors.name && <div className="err">{errors.name.message}</div>}
-          </label>
-          <label className="space-y-1">
-            <div className="text-sm text-white/70">Location</div>
-            <I {...register("location")}/>{errors.location && <div className="err">{errors.location.message}</div>}
-          </label>
-          <label className="space-y-1">
-            <div className="text-sm text-white/70">Contact Email</div>
-            <I {...register("email")}/>
-          </label>
+    <div className="container mx-auto px-6 py-10">
+      <h1 className="text-3xl font-bold mb-6">Add My Services</h1>
+      <form onSubmit={submit} className="grid gap-4 max-w-2xl">
+        <div className="flex gap-3">
+          <button type="button" onClick={()=>setRole("act")} className={`px-4 py-2 rounded-xl ${role==="act"?"bg-emerald-500 text-black":"bg-white/5"}`}>I’m an Act</button>
+          <button type="button" onClick={()=>setRole("venue")} className={`px-4 py-2 rounded-xl ${role==="venue"?"bg-emerald-500 text-black":"bg-white/5"}`}>I’m a Venue</button>
         </div>
-        <label className="space-y-1">
-          <div className="text-sm text-white/70">About</div>
-          <T {...register("description")}/>
-        </label>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <label className="space-y-1"><div className="text-sm text-white/70">Starting Price (£)</div><I {...register("price_from")}/></label>
-          <label className="space-y-1 sm:col-span-2"><div className="text-sm text-white/70">Services / Packages</div><T {...register("services")}/></label>
-        </div>
-        <button className="btn" disabled={isSubmitting}>{isSubmitting? "Submitting…" : "Submit"}</button>
+        <input className="bg-white/5 border border-white/10 rounded-xl px-4 py-3" placeholder="Name" value={name} onChange={e=>setName(e.target.value)} required/>
+        <input className="bg-white/5 border border-white/10 rounded-xl px-4 py-3" placeholder="Location" value={location} onChange={e=>setLocation(e.target.value)}/>
+        <input className="bg-white/5 border border-white/10 rounded-xl px-4 py-3" placeholder="Price from (GBP)" value={price} onChange={e=>setPrice(e.target.value)}/>
+        {role==="act" && (
+          <input className="bg-white/5 border border-white/10 rounded-xl px-4 py-3" placeholder="Genres (comma separated)" value={genres} onChange={e=>setGenres(e.target.value)}/>
+        )}
+        {role==="venue" && (
+          <>
+            <input className="bg-white/5 border border-white/10 rounded-xl px-4 py-3" placeholder="Capacity" value={capacity} onChange={e=>setCapacity(e.target.value)}/>
+            <input className="bg-white/5 border border-white/10 rounded-xl px-4 py-3" placeholder="Style (e.g. rustic, modern)" value={style} onChange={e=>setStyle(e.target.value)}/>
+          </>
+        )}
+        <button className="px-5 py-3 rounded-xl bg-emerald-500 text-black font-medium">Submit</button>
+        {msg && <div className="opacity-80">{msg}</div>}
       </form>
-    </main>
+    </div>
   );
 }

@@ -17,6 +17,7 @@ import VenueDetail from "./pages/VenueDetail.jsx";
 import Search from "./pages/Search.jsx";
 import Onboard from "./pages/Onboard.jsx";
 import Leads from "./pages/Leads.jsx";
+import Admin from "./pages/admin/Admin.jsx";
 
 function Shell(){
   return (
@@ -33,6 +34,7 @@ function Shell(){
               <Route path="/search" element={<Search/>}/>
         <Route path="/onboard" element={<Onboard/>}/>
         <Route path="/admin/leads" element={<Leads/>}/>
+        <Route path="/admin" element={<Admin/>}/>
       </Routes>
       <Footer/>
       <ShortlistDrawer/>

@@ -1,5 +1,6 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Float  # etc
+from .db import Base
 from sqlalchemy.sql import func
 Base = declarative_base()
 class User(Base):

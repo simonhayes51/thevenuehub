@@ -1,4 +1,4 @@
-export default function LoadingGrid({count=6}){
+﻿export default function LoadingGrid({count=6}){
   return (
     <div className="grid-cards">
       {Array.from({length:count}).map((_,i)=>

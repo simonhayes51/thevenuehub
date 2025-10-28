@@ -1,34 +1,48 @@
 ﻿import { useEffect, useState } from "react";
-import SEO from "../components/SEO.jsx";
-import api from "../lib/api.js";
+import { getJSON, patchJSON } from "../lib/api";
 
 export default function Leads(){
-  const [items,setItems] = useState(null);
-  const [err,setErr] = useState(null);
+  const [subs,setSubs] = useState([]);
+  const [revs,setRevs] = useState([]);
 
-  useEffect(()=>{
-    api.adminLeads().then(setItems).catch(setErr);
-  },[]);
+  async function load(){
+    try { setSubs(await getJSON("/admin/submissions")); } catch { setSubs([]); }
+    try { setRevs(await getJSON("/admin/reviews?status=pending")); } catch { setRevs([]); }
+  }
+  useEffect(()=>{ load(); },[]);
 
   return (
-    <main className="container-h py-10 space-y-6">
-      <SEO title="Lead Inbox" description="Incoming enquiries from your forms." />
-      <h1 className="text-3xl font-semibold">Lead Inbox</h1>
-      {!items && !err && <div className="skeleton h-24" />}
-      {err && <div className="text-rose-300">Couldn’t load leads. Are you logged in as admin and is /api/admin/leads implemented?</div>}
-      {Array.isArray(items) && (items.length ? (
-        <div className="space-y-3">
-          {items.map(l=>(
-            <div key={l.id} className="card p-4">
-              <div className="font-medium">{l.customer_name} • {l.customer_email}</div>
-              <div className="text-white/60 text-sm">{l.message || "—"}</div>
-              <div className="text-white/50 text-xs mt-2">
-                Preferred date: {l.date || "—"} • For: {l.act_id?`Act #${l.act_id}`:l.venue_id?`Venue #${l.venue_id}`:"—"}
+    <div className="container mx-auto px-6 py-10 grid lg:grid-cols-2 gap-8">
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Provider Submissions</h2>
+        <div className="grid gap-3">
+          {subs.map(s=>(
+            <div key={s.id} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="font-semibold">{s.role.toUpperCase()} — {s.payload?.name}</div>
+              <div className="text-sm opacity-70">{s.payload?.location || "—"}</div>
+              <div className="mt-3 flex gap-2">
+                <a className="px-3 py-2 rounded-xl bg-emerald-500 text-black" href={`${import.meta.env.VITE_API_BASE}/admin/submissions/${s.id}/approve`} target="_blank">Approve (API)</a>
               </div>
             </div>
           ))}
         </div>
-      ) : <div className="text-white/60">No leads yet.</div>)}
-    </main>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Reviews awaiting approval</h2>
+        <div className="grid gap-3">
+          {revs.map(r=>(
+            <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="font-semibold">Rating {r.rating}/5</div>
+              <div className="opacity-80">{r.comment}</div>
+              <div className="mt-3 flex gap-2">
+                <button className="px-3 py-2 rounded-xl bg-emerald-500 text-black" onClick={async()=>{await patchJSON(`/admin/reviews/${r.id}?status=approved`); load();}}>Approve</button>
+                <button className="px-3 py-2 rounded-xl bg-white/10" onClick={async()=>{await patchJSON(`/admin/reviews/${r.id}?status=rejected`); load();}}>Reject</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
