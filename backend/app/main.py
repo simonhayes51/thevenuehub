@@ -781,3 +781,25 @@ def _vh_email_unique_index():
     except Exception:
         pass
 # === /venuehub neon patch end ===
+# === venuehub patch: debug submissions ===
+from typing import Any
+
+@app.get("/debug/submissions/count")
+@app.get("/api/debug/submissions/count")
+def debug_submissions_count(db: Session = Depends(get_db)):
+    c = db.execute(text("SELECT COUNT(*) AS c FROM submissions")).mappings().first()["c"]
+    return {"count": c}
+
+@app.get("/debug/submissions/last")
+@app.get("/api/debug/submissions/last")
+def debug_submissions_last(limit: int = 10, db: Session = Depends(get_db)):
+    rows = db.execute(text("SELECT id, role, status, created_at, payload_json FROM submissions ORDER BY id DESC LIMIT :n"), {"n": limit}).mappings().all()
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["payload"] = json.loads(d.pop("payload_json") or "{}")
+        except Exception:
+            d["payload"] = {}
+        out.append(d)
+    return out
