@@ -1,3 +1,5 @@
+﻿from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Float  # etc
 from .db import Base
@@ -67,3 +69,4 @@ class Enquiry(Base):
     act_id = Column(Integer)
     venue_id = Column(Integer)
     created_at = Column(TIMESTAMP, nullable=True)
+
