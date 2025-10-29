@@ -1,11 +1,11 @@
 ﻿import os, json
 from datetime import datetime, timedelta
-from fastapi import FastAPI, Depends, HTTPException, Response, Query, Request
+from fastapi import FastAPI, Depends, HTTPException, Response, Query, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from .db import SessionLocal, init_db
 from .models import Act, Venue, User, Booking
@@ -884,3 +884,122 @@ async def provider_submit(request: Request, db: Session = Depends(get_db)):
     }).mappings().first()
     db.commit()
     return {"status":"pending","id":row["id"],"message":"Thanks! We'll review and contact you soon."}
+
+# === venuehub: admin approve with image upload ===
+@app.post("/admin/submissions/{submission_id}/approve-upload")
+@app.post("/api/admin/submissions/{submission_id}/approve-upload")
+async def admin_approve_submission_upload(
+    submission_id: int,
+    image: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+):
+    row = db.execute(text("SELECT id, role, payload_json FROM submissions WHERE id = :id"),
+                     {"id": submission_id}).mappings().first()
+    if not row:
+        raise HTTPException(404, "Submission not found")
+
+    payload = {}
+    try:
+        payload = json.loads(row["payload_json"] or "{}")
+    except Exception:
+        payload = {}
+
+    # Optional: convert uploaded file to data URL and prefer it
+    image_url = payload.get("image_url") or ""
+    if image is not None:
+        try:
+            import base64
+            b = await image.read()
+            ct = image.content_type or "image/jpeg"
+            image_url = f"data:{ct};base64,{base64.b64encode(b).decode()}"
+        except Exception:
+            pass
+
+    role = (row["role"] or "").lower()
+    if role == "act":
+        act = Act(
+            name=payload.get("name",""),
+            location=payload.get("location",""),
+            act_type=payload.get("act_type","Entertainment"),
+            genres=payload.get("genres") or payload.get("genre",""),
+            price_from=payload.get("price_from"),
+            description=payload.get("description",""),
+            rating=4.8,
+            featured=False,
+            premium=False,
+            image_url=image_url,
+        )
+        db.add(act); db.flush()
+    else:
+        venue = Venue(
+            name=payload.get("name",""),
+            location=payload.get("location",""),
+            capacity=payload.get("capacity"),
+            price_from=payload.get("price_from"),
+            style=payload.get("style",""),
+            amenities=payload.get("amenities",""),
+            description=payload.get("description",""),
+            featured=False,
+            premium=False,
+            image_url=image_url,
+        )
+        db.add(venue); db.flush()
+
+    db.execute(text("UPDATE submissions SET status = 'approved' WHERE id = :id"), {"id": submission_id})
+    db.commit()
+    return {"ok": True}
+
+# === venuehub: bulk approve / reject ===
+class BulkAction(BaseModel):
+    action: Literal["approve","reject"]
+    ids: List[int]
+
+@app.post("/admin/submissions/bulk")
+@app.post("/api/admin/submissions/bulk")
+def admin_bulk_submissions(data: BulkAction, db: Session = Depends(get_db)):
+    if not data.ids:
+        return {"ok": True, "processed": 0}
+
+    processed = 0
+    if data.action == "reject":
+        db.execute(text("UPDATE submissions SET status = 'rejected' WHERE id = ANY(:ids)"),
+                   {"ids": data.ids})
+        processed = len(data.ids)
+    else:
+        # Approve without image (uses existing approve logic)
+        for sid in data.ids:
+            r = db.execute(text("SELECT role, payload_json FROM submissions WHERE id=:id"),
+                           {"id": sid}).mappings().first()
+            if not r: 
+                continue
+            payload = {}
+            try: payload = json.loads(r["payload_json"] or "{}")
+            except: payload = {}
+            role = (r["role"] or "").lower()
+            if role == "act":
+                obj = Act(
+                    name=payload.get("name",""),
+                    location=payload.get("location",""),
+                    act_type=payload.get("act_type","Entertainment"),
+                    genres=payload.get("genres") or payload.get("genre",""),
+                    price_from=payload.get("price_from"),
+                    description=payload.get("description",""),
+                    rating=4.8, featured=False, premium=False,
+                    image_url=payload.get("image_url") or ""
+                ); db.add(obj)
+            else:
+                obj = Venue(
+                    name=payload.get("name",""),
+                    location=payload.get("location",""),
+                    capacity=payload.get("capacity"),
+                    price_from=payload.get("price_from"),
+                    style=payload.get("style",""),
+                    amenities=payload.get("amenities",""),
+                    description=payload.get("description",""),
+                    featured=False, premium=False,
+                    image_url=payload.get("image_url") or ""
+                ); db.add(obj)
+            db.execute(text("UPDATE submissions SET status='approved' WHERE id=:id"), {"id": sid})
+            processed += 1
+        db.commit()
+    return {"ok": True, "processed": processed}
