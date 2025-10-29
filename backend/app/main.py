@@ -1,6 +1,6 @@
 ﻿import os, json
 from datetime import datetime, timedelta
-from fastapi import FastAPI, Depends, HTTPException, Response, Query, UploadFile, File, Request
+from fastapi import FastAPI, Depends, HTTPException, Response, Query, Request, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
@@ -815,10 +815,7 @@ def admin_reject_submission(submission_id: int, db: Session = Depends(get_db)):
 @app.post("/providers/submit")
 @app.post("/api/providers/submit")
 async def provider_submit(request: Request, db: Session = Depends(get_db)):
-    """
-    NEW endpoint that accepts JSON or multipart form-data.
-    Normalises fields and stores a 'pending' submission. Returns new id.
-    """
+    \"\"\"Accept JSON or form-data (with optional 'image' file). Store as pending submission.\"\"\"
     payload = None
     try:
         ct = (request.headers.get("content-type") or "")
@@ -827,16 +824,35 @@ async def provider_submit(request: Request, db: Session = Depends(get_db)):
     except Exception:
         payload = None
 
+    # If not JSON, parse form (keeps fields as strings)
+    form = None
     if payload is None:
         try:
             form = await request.form()
             payload = {}
             for k in form.keys():
+                # Skip the file object; we handle below
+                if k == "image":
+                    continue
                 payload[k] = form.get(k)
         except Exception:
             payload = {}
 
     data = payload or {}
+
+    # Try to extract image (either form file or data URL already in payload)
+    image_url = data.get("image_url") or ""
+    try:
+        if form is None:
+            form = await request.form()
+        up = form.get("image")
+        if up is not None and hasattr(up, "read"):
+            import base64
+            b = await up.read()
+            ct = getattr(up, "content_type", None) or "image/jpeg"
+            image_url = f"data:{ct};base64,{base64.b64encode(b).decode()}"
+    except Exception:
+        pass
 
     def _to_int(x):
         try: return int(x) if x not in (None,"","null") else None
@@ -859,6 +875,7 @@ async def provider_submit(request: Request, db: Session = Depends(get_db)):
     act_type    = (data.get("act_type") or "").strip()
     style       = (data.get("style") or "").strip()
     amenities   = (data.get("amenities") or "").strip()
+    phone       = (data.get("phone") or "").strip()
 
     row = db.execute(text("""
         INSERT INTO submissions (role, payload_json, status, created_at)
@@ -871,6 +888,7 @@ async def provider_submit(request: Request, db: Session = Depends(get_db)):
             "type": role,
             "name": name,
             "email": email,
+            "phone": phone,
             "location": location,
             "genres": genres,
             "capacity": capacity,
@@ -880,12 +898,11 @@ async def provider_submit(request: Request, db: Session = Depends(get_db)):
             "act_type": act_type,
             "style": style,
             "amenities": amenities,
+            "image_url": image_url,
         }),
     }).mappings().first()
     db.commit()
-    return {"status":"pending","id":row["id"],"message":"Thanks! We'll review and contact you soon."}
-
-# === venuehub: admin approve with image upload ===
+    return {"status":"pending","id":row["id"],"message":"Thanks! We'll review and contact you soon."}# === venuehub: admin approve with image upload ===
 @app.post("/admin/submissions/{submission_id}/approve-upload")
 @app.post("/api/admin/submissions/{submission_id}/approve-upload")
 async def admin_approve_submission_upload(
@@ -1003,3 +1020,4 @@ def admin_bulk_submissions(data: BulkAction, db: Session = Depends(get_db)):
             processed += 1
         db.commit()
     return {"ok": True, "processed": processed}
+
