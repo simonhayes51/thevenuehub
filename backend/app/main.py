@@ -1,6 +1,6 @@
 ﻿import os, json
 from datetime import datetime, timedelta
-from fastapi import FastAPI, Depends, HTTPException, Response, Query
+from fastapi import FastAPI, Depends, HTTPException, Response, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
@@ -810,3 +810,77 @@ def admin_reject_submission(submission_id: int, db: Session = Depends(get_db)):
     db.execute(text("UPDATE submissions SET status = 'rejected' WHERE id = :id"), {"id": submission_id})
     db.commit()
     return {"ok": True}
+
+# === venuehub: permissive provider submit ===
+@app.post("/providers/submit")
+@app.post("/api/providers/submit")
+async def provider_submit(request: Request, db: Session = Depends(get_db)):
+    """
+    NEW endpoint that accepts JSON or multipart form-data.
+    Normalises fields and stores a 'pending' submission. Returns new id.
+    """
+    payload = None
+    try:
+        ct = (request.headers.get("content-type") or "")
+        if "application/json" in ct:
+            payload = await request.json()
+    except Exception:
+        payload = None
+
+    if payload is None:
+        try:
+            form = await request.form()
+            payload = {}
+            for k in form.keys():
+                payload[k] = form.get(k)
+        except Exception:
+            payload = {}
+
+    data = payload or {}
+
+    def _to_int(x):
+        try: return int(x) if x not in (None,"","null") else None
+        except: return None
+    def _to_float(x):
+        try: return float(x) if x not in (None,"","null") else None
+        except: return None
+
+    role = (data.get("type") or data.get("role") or "").strip().lower()
+    if role not in ("act","venue"): role = "act"
+
+    name        = (data.get("name") or "").strip()
+    email       = (data.get("email") or "").strip()
+    location    = (data.get("location") or "").strip()
+    genres      = data.get("genres") or data.get("genre") or ""
+    capacity    = _to_int(data.get("capacity"))
+    price_from  = _to_float(data.get("price_from"))
+    website     = (data.get("website") or "").strip()
+    description = (data.get("description") or "").strip()
+    act_type    = (data.get("act_type") or "").strip()
+    style       = (data.get("style") or "").strip()
+    amenities   = (data.get("amenities") or "").strip()
+
+    row = db.execute(text("""
+        INSERT INTO submissions (role, payload_json, status, created_at)
+        VALUES (:role, :payload, 'pending', NOW())
+        RETURNING id
+    """), {
+        "role": role,
+        "payload": json.dumps({
+            **data,
+            "type": role,
+            "name": name,
+            "email": email,
+            "location": location,
+            "genres": genres,
+            "capacity": capacity,
+            "price_from": price_from,
+            "website": website,
+            "description": description,
+            "act_type": act_type,
+            "style": style,
+            "amenities": amenities,
+        }),
+    }).mappings().first()
+    db.commit()
+    return {"status":"pending","id":row["id"],"message":"Thanks! We'll review and contact you soon."}
