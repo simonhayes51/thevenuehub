@@ -815,7 +815,7 @@ def admin_reject_submission(submission_id: int, db: Session = Depends(get_db)):
 @app.post("/providers/submit")
 @app.post("/api/providers/submit")
 async def provider_submit(request: Request, db: Session = Depends(get_db)):
-    \"\"\"Accept JSON or form-data (with optional 'image' file). Store as pending submission.\"\"\"
+    """Accept JSON or form-data (with optional 'image' file). Store as pending submission."""
     payload = None
     try:
         ct = (request.headers.get("content-type") or "")
@@ -1020,4 +1020,5 @@ def admin_bulk_submissions(data: BulkAction, db: Session = Depends(get_db)):
             processed += 1
         db.commit()
     return {"ok": True, "processed": processed}
+
 
