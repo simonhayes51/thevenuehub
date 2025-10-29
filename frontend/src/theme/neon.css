@@ -1,0 +1,12 @@
+﻿:root{
+  --bg:#0a0d24; --panel:rgba(15,20,48,.65); --stroke:rgba(255,255,255,.10);
+  --text:#e9ecf5; --muted:#b7c0d8; --neon1:#ff2fd6; --neon2:#00ffe1;
+}
+html,body,#root{height:100%;}
+body{
+  background:
+    radial-gradient(1200px 800px at 20% -10%, rgba(255,47,214,.12), transparent 50%),
+    radial-gradient(1000px 700px at 110% 10%, rgba(0,255,225,.10), transparent 50%),
+    linear-gradient(180deg, #060819, #0a0d24 40%, #0b102a 100%);
+  color:var(--text);
+}

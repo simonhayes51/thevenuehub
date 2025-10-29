@@ -72,7 +72,7 @@ export default function Join(){
             <div><span className="text-white/60 text-sm">Email:</span> {payload.email}</div>
             <div><span className="text-white/60 text-sm">Location:</span> {payload.location}</div>
             {payload.type==="act" ? <div><span className="text-white/60 text-sm">Genre:</span> {payload.genre}</div> : <div><span className="text-white/60 text-sm">Capacity:</span> {payload.capacity}</div>}
-            <div><span className="text-white/60 text-sm">Website:</span> {payload.website || "â€”"}</div>
+            <div><span className="text-white/60 text-sm">Website:</span> {payload.website || "—"}</div>
           </div>
         )}
 
@@ -87,3 +87,4 @@ export default function Join(){
     </main>
   );
 }
+

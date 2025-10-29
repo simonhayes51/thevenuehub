@@ -27,7 +27,7 @@ export default function ShortlistDrawer(){
                     <img src={x.image_url ?? ""} alt="" className="w-14 h-14 object-cover rounded-xl bg-white/5"/>
                     <div className="flex-1">
                       <div className="font-medium leading-tight">{x.name}</div>
-                      <div className="text-xs text-white/50">{x.location || x.genre || "â€”"}</div>
+                      <div className="text-xs text-white/50">{x.location || x.genre || "—"}</div>
                       <div className="mt-2 flex gap-2">
                         <Link to={`/${type.slice(0,-1)}/${x.id}`} className="pill">Details</Link>
                         <button className="pill" onClick={()=>pick(type, x)}>Compare</button>
@@ -48,3 +48,4 @@ export default function ShortlistDrawer(){
     </div>
   );
 }
+

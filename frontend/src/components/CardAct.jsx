@@ -16,7 +16,7 @@ export default function CardAct({act}){
           <Link to={`/acts/${act?.id ?? ""}`} className="font-semibold leading-tight">{act?.name ?? "Untitled Act"}</Link>
           {act?.rating ? <RatingStars rating={act.rating}/> : null}
         </div>
-        <p className="text-sm text-white/70">{act?.genre || act?.location || "â€”"}</p>
+        <p className="text-sm text-white/70">{act?.genre || act?.location || "—"}</p>
         <div className="flex items-center justify-between text-xs text-white/60">
           <span>{act?.price_from ? `From Â£${act.price_from}` : "Price on request"}</span>
           <div className="flex gap-2">
@@ -28,3 +28,4 @@ export default function CardAct({act}){
     </article>
   );
 }
+

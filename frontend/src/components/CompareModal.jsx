@@ -37,7 +37,7 @@ export default function CompareModal(){
                 <div key={label} className="py-3 text-white/60 border-t border-line">{label}</div>
                 {picked.map(x=>
                   <div key={label+"-"+x.id} className="py-3 border-t border-line">
-                    {String(x?.[key] ?? "â€”")}
+                    {String(x?.[key] ?? "—")}
                   </div>
                 )}
               </>
@@ -48,3 +48,4 @@ export default function CompareModal(){
     </div>
   );
 }
+

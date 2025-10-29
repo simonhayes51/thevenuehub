@@ -1,13 +1,20 @@
-/** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  content: ['./index.html','./src/**/*.{js,jsx}'],
   theme: {
     extend: {
-      fontFamily: { display: ['Poppins','ui-sans-serif','system-ui'], sans: ['Inter','ui-sans-serif','system-ui'] },
-      colors: { brand: { bg:"#0c0f17", card:"#121728", primary:"#9b5cff", secondary:"#00e7f0", accent:"#ff4d6d", ring:"#7c3aed" } },
-      boxShadow: { neon:"0 0 0 2px rgba(155,92,255,0.35), 0 0 30px rgba(0,231,240,0.2)", card:"0 10px 30px rgba(0,0,0,0.25)" },
-      animation: { 'pulse-slow': 'pulse 3s ease-in-out infinite' },
+      colors: {
+        ink: '#1C1C28',
+        sub: '#6F6F80',
+        pink: '#FF4DA0',
+        aqua: '#00D7E4',
+        orange: '#FF8A3D',
+        lilac: '#B6A1FF',
+      },
+      fontFamily: {
+        display: ['Outfit','Poppins','sans-serif'],
+        body: ['DM Sans','Inter','sans-serif'],
+      },
     },
   },
   plugins: [],
-};
+}

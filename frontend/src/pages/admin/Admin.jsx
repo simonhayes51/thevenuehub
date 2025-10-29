@@ -1,170 +1,85 @@
-// src/pages/admin/Admin.jsx
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { FaBolt, FaFire, FaStar, FaUsers, FaCalendar } from "react-icons/fa";
+import SubmissionsPanel from "@/components/admin/SubmissionsPanel.jsx";
 
-const API_BASE = import.meta.env.VITE_API_BASE?.replace(/\/+$/,"") || "";
+const API = import.meta.env.VITE_API_BASE || "";
 
-function useToken() {
-  const [token, setToken] = useState(() => localStorage.getItem("vh_admin_token") || "");
-  const save = (t) => { localStorage.setItem("vh_admin_token", t); setToken(t); };
-  const clear = () => { localStorage.removeItem("vh_admin_token"); setToken(""); };
-  return { token, save, clear };
-}
+export default function AdminPage() {
+  const [token, setToken] = useState(localStorage.getItem("vh_admin_token") || "");
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-function Section({ title, endpoint, token, columns, rowKey = "id" }) {
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const headers = useMemo(() => {
-    const h = { "Accept": "application/json" };
-    if (token) h["Authorization"] = `Bearer ${token}`;
-    return h;
-  }, [token]);
+  const saveToken = () => {
+    localStorage.setItem("vh_admin_token", token.trim());
+    alert("Token saved");
+    loadStats();
+  };
 
-  const load = async () => {
-    if (!endpoint) return;
-    setLoading(true);
+  const loadStats = async () => {
     try {
-      const r = await fetch(`${API_BASE}${endpoint}`, { headers });
-      const j = await r.json();
-      setRows(Array.isArray(j) ? j : []);
-    } catch (e) {
-      console.error(e);
+      setLoading(true);
+      const res = await fetch(`${API}/admin/summary`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) setStats(await res.json());
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, [endpoint, token]);
+  useEffect(() => { if (token) loadStats(); }, []);
 
-  return (
-    <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <button onClick={load} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20">
-          {loading ? "Refreshing…" : "Refresh"}
-        </button>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="text-left text-white/70">
-            <tr>
-              {columns.map(c => (
-                <th key={c.key} className="px-3 py-2 border-b border-white/10">{c.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr><td className="px-3 py-5 text-white/60" colSpan={columns.length}>No data</td></tr>
-            )}
-            {rows.map(r => (
-              <tr key={r[rowKey]} className="odd:bg-white/0 even:bg-white/5">
-                {columns.map(c => (
-                  <td key={c.key} className="px-3 py-2 align-top">
-                    {c.render ? c.render(r) : (r[c.key] ?? "")}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-export default function Admin() {
-  const { token, save, clear } = useToken();
-  const [active, setActive] = useState("acts");
-  const [tmpToken, setTmpToken] = useState(token);
-
-  const tabs = [
-    { id: "acts",        label: "Acts",        ep: "/api/admin/acts" },
-    { id: "venues",      label: "Venues",      ep: "/api/admin/venues" },
-    { id: "bookings",    label: "Bookings",    ep: "/api/admin/bookings" },
-    { id: "reviews",     label: "Reviews",     ep: "/api/admin/reviews" },
-    { id: "submissions", label: "Submissions", ep: "/api/admin/submissions" },
+  const statCards = [
+    { label: "Acts", value: stats?.acts || 0, icon: FaBolt, gradient: "from-[#00fff9] to-[#9b5cff]" },
+    { label: "Venues", value: stats?.venues || 0, icon: FaFire, gradient: "from-[#ff2a6d] to-[#fffc00]" },
+    { label: "Bookings", value: stats?.bookings || 0, icon: FaCalendar, gradient: "from-[#05ffa1] to-[#00fff9]" },
+    { label: "Pending Reviews", value: stats?.pending_reviews || 0, icon: FaStar, gradient: "from-[#fffc00] to-[#ff2a6d]" },
+    { label: "Submissions", value: stats?.pending_submissions || 0, icon: FaUsers, gradient: "from-[#9b5cff] to-[#ff2a6d]" },
   ];
 
-  const cols = {
-    acts: [
-      { key: "id", label: "ID" },
-      { key: "name", label: "Name" },
-      { key: "location", label: "Location" },
-      { key: "price_from", label: "From" },
-      { key: "premium", label: "Premium" },
-    ],
-    venues: [
-      { key: "id", label: "ID" },
-      { key: "name", label: "Venue" },
-      { key: "location", label: "Location" },
-      { key: "capacity", label: "Capacity" },
-      { key: "price_from", label: "From" },
-      { key: "premium", label: "Premium" },
-    ],
-    bookings: [
-      { key: "id", label: "ID" },
-      { key: "customer_name", label: "Name" },
-      { key: "customer_email", label: "Email" },
-      { key: "date", label: "Date" },
-      { key: "message", label: "Message" },
-      { key: "act_id", label: "Act ID" },
-      { key: "venue_id", label: "Venue ID" },
-    ],
-    reviews: [
-      { key: "id", label: "ID" },
-      { key: "rating", label: "★" },
-      { key: "comment", label: "Comment" },
-      { key: "author_name", label: "Author" },
-      { key: "act_id", label: "Act" },
-      { key: "venue_id", label: "Venue" },
-      { key: "status", label: "Status" },
-    ],
-    submissions: [
-      { key: "id", label: "ID" },
-      { key: "role", label: "Role" },
-      {
-        key: "payload", label: "Payload",
-        render: (r) => <code className="text-xs">{JSON.stringify(r.payload || r.payload_json || {}, null, 0)}</code>
-      },
-      { key: "status", label: "Status" },
-    ],
-  };
-
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-semibold">Admin</h1>
-        <div className="flex items-center gap-2">
-          <input
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 w-[360px] outline-none"
-            placeholder="Paste Bearer token here"
-            value={tmpToken}
-            onChange={(e) => setTmpToken(e.target.value)}
-          />
-          <button onClick={() => save(tmpToken)} className="px-3 py-2 rounded-lg bg-emerald-500 text-black font-medium">Save</button>
-          {token && <button onClick={clear} className="px-3 py-2 rounded-lg bg-white/10">Clear</button>}
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <h1 className="font-display text-5xl font-black mb-8 neon-text">ADMIN DASHBOARD</h1>
+
+      <div className="flex items-center gap-3 mb-8">
+        <input
+          value={token}
+          onChange={e => setToken(e.target.value)}
+          placeholder="Paste Bearer token here"
+          className="flex-1"
+        />
+        <button onClick={saveToken} className="btn">SAVE TOKEN</button>
+      </div>
+
+      {stats && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          {statCards.map((stat, i) => (
+            <div key={i} className="card p-6 spotlight">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
+                  <stat.icon className="text-2xl" />
+                </div>
+                <div>
+                  <div className="text-3xl font-black">{stat.value}</div>
+                  <div className="text-sm opacity-70">{stat.label}</div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
+      )}
+
+      <div className="flex gap-2 mb-8 flex-wrap">
+        <a href="/acts" className="pill">Acts</a>
+        <a href="/venues" className="pill">Venues</a>
+        <a href="/bookings" className="pill">Bookings</a>
+        <a href="/reviews" className="pill">Reviews</a>
+        <a href="/admin" className="pill bg-[#9b5cff]/40 border-[#9b5cff]">Submissions</a>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        {tabs.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setActive(t.id)}
-            className={`px-3 py-1.5 rounded-lg border ${active===t.id ? "bg-white/10 border-white/20" : "bg-white/5 border-white/10 hover:bg-white/10"}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <Section
-        title={tabs.find(x => x.id === active)?.label || ""}
-        endpoint={tabs.find(x => x.id === active)?.ep || ""}
-        token={token}
-        columns={cols[active]}
-      />
+      <SubmissionsPanel />
     </div>
   );
 }

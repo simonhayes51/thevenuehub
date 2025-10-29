@@ -1,0 +1,58 @@
+﻿:root{
+  --vh-bg1:#0a0f1f; --vh-bg2:#171b34; --vh-text:#e9ecf5;
+  --vh-pink:#ff2fd6; --vh-cyan:#00ffe1; --vh-yellow:#ffe066;
+  --vh-card:#0f1430; --vh-border:rgba(255,255,255,.08);
+}
+html,body,#root{height:100%}
+*{box-sizing:border-box}
+body{
+  margin:0; color:var(--vh-text);
+  background:
+    radial-gradient(1000px 600px at 80% -100px, rgba(0,255,225,.08), transparent 60%),
+    radial-gradient(900px 500px at -20% 20%, rgba(255,47,214,.08), transparent 60%),
+    linear-gradient(180deg, var(--vh-bg1), var(--vh-bg2));
+  background-attachment: fixed;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+}
+
+/* Neon helpers */
+.neon-text{ text-shadow: 0 0 8px rgba(255,47,214,.6), 0 0 24px rgba(0,255,225,.45) }
+.neon-pink{ color: var(--vh-pink) } .neon-cyan{ color: var(--vh-cyan) }
+.neon-glow{
+  box-shadow:
+    0 0 0 1px var(--vh-border),
+    0 0 30px rgba(255,47,214,.12),
+    0 0 50px rgba(0,255,225,.08);
+}
+
+/* Hero */
+.vh-hero{ padding:clamp(48px,8vw,120px) 24px; text-align:center }
+.vh-badge{
+  display:inline-block; padding:6px 12px; border-radius:999px;
+  background:linear-gradient(90deg,var(--vh-pink),var(--vh-cyan));
+  color:#0b0f1e; font-weight:800; letter-spacing:.3px; margin-bottom:16px;
+}
+.vh-title{
+  font-size:clamp(36px,6vw,64px); line-height:1.06; margin:0 auto 12px; max-width:980px;
+  font-weight:900;
+}
+.vh-sub{ opacity:.92; margin:0 auto; max-width:820px; font-size:clamp(16px,2.2vw,20px) }
+.vh-cta{ margin-top:26px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap }
+.vh-btn{
+  text-decoration:none; font-weight:800; padding:12px 18px; border-radius:14px; color:var(--vh-text);
+  background:#101533; border:1px solid var(--vh-border); transition: transform .12s ease;
+}
+.vh-btn:hover{ transform: translateY(-1px) }
+.vh-btn.primary{
+  background:linear-gradient(90deg,var(--vh-pink),var(--vh-cyan)); color:#0b0f1e; border:none
+}
+
+/* Neon card */
+.neon-card{
+  background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
+  border:1px solid var(--vh-border);
+  border-radius:16px; padding:16px; backdrop-filter: blur(6px);
+}
+.neon-card h3{ margin:0 0 6px; font-size:20px; font-weight:800 }
+.neon-meta{ opacity:.85; font-size:14px }
+.neon-price{ font-weight:900; letter-spacing:.2px }
