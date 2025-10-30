@@ -1,0 +1,25 @@
+{
+  "services": [
+    {
+      "name": "bookedup-frontend",
+      "rootDirectory": ".",
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "8080"
+      },
+      "nixpacksPlan": {
+        "phases": {
+          "install": {
+            "cmds": ["npm ci --omit=dev", "npm install express serve-static"]
+          },
+          "build": {
+            "cmds": ["npm run build"]
+          },
+          "start": {
+            "cmds": ["node server.js"]
+          }
+        }
+      }
+    }
+  ]
+}

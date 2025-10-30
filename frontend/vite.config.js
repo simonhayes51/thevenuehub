@@ -1,8 +1,17 @@
-﻿import { fileURLToPath, URL } from 'node:url';
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+﻿import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// Allow Railway preview host & SPA fallback for sub-routes
 export default defineConfig({
-  resolve: { alias: { '@': new URL('./src', import.meta.url).pathname } },
   plugins: [react()],
-  build: { outDir: "dist" }
-});
+  preview: {
+    port: 8080,
+    host: true,
+    allowedHosts: [
+      'localhost',
+      /\.up\.railway\.app$/
+    ],
+    headers: { 'Cache-Control': 'no-store' }
+  },
+  server: { host: true }
+})
